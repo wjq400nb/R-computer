@@ -1,0 +1,80 @@
+library(ISLR)
+dim(Smarket)
+names(Smarket)
+summary(Smarket)
+pairs(Smarket)
+attach(Smarket)
+
+"------------------------ Logistic Regression ------------------------"
+
+# Data is train and test
+train <- Smarket[(Year<2005), ]
+test <- Smarket[!(Year<2005), ]
+
+# generalized mobel ，among logistic mobel
+glm_mod <- glm(Direction~Lag1+Lag2+Lag3+Lag4+Lag5+Volume,
+              data = train,
+              family = binomial)
+summary(glm_mod)
+# coefficient of mobel
+coef(glm_mod)
+summary(coef(glm_mod))
+
+# under the predicted input, market the possibly of increasing
+glm_mod_prob <- predict(glm_mod, test, type='response')
+# Transform probability into a discrete variable Up and Down
+glm_mod_pred <- rep('Down', 252)
+glm_mod_pred[glm_mod_prob > 0.5] <- 'Up'
+
+# computer confusion matrix
+table(glm_mod_pred, test$Direction)
+=====================================
+> table(glm_mod_pred, test$Direction)
+glm_mod_pred Down Up
+        Down   77 97
+        Up     34 44
+=====================================
+
+# computer accuracy
+mean(glm_mod_pred == test$Direction)	# 0.4801587
+
+# optimization mobel
+
+"-------------------- Linear Discriminant Analysis --------------------"
+
+library(MASS)
+
+# mobel fitting
+lda_mod <- lda(Direction~Lag1+Lag2, data=train)
+plot(lda_mod)
+
+# computer  predicted value
+lda_mod_pred <- predict(lda_mod, test)
+names(lda_mod_pred)
+
+# computer confusion matrix and accuracy
+table(lda_mod_pred$class, test$Direction)
+mean(lda_mod_pred$class == test$Direction)
+
+"------------------ Quadratic Discriminant Analysis ------------------"
+
+qda_mod <- qda(Direction~Lag1+Lag2, data=train)
+qda_mod_pred <- predict(qda_mod, test)
+table(qda_mod_pred$class, test$Direction)
+mean(qda_mod_pred$class == test$Direction)
+
+"------------------------- K Nearest Neighbor -------------------------"
+
+library(class)
+
+# preparing data
+train.X <- cbind(Lag1, Lag2)[(Year<2005), ]
+train.Y <- Direction[(Year<2005)]
+test.X <- cbind(Lag1, Lag2)[!(Year<2005), ]
+
+#  KNN and set.seed
+set.seed(1)
+knn.pred <- knn(train.X, test.X, train.Y, k=1)	# 更改 k 值寻找最佳拟合
+table(knn.pred, test$Direction)
+mean(knn.pred == test$Direction)
+
