@@ -1,0 +1,68 @@
+library(ISLR)
+set.seed(1)
+attach(Auto)
+
+"------------------------------ Verification set method ------------------------------"
+
+# estimate the test error rate resulting from fitting multiple linear models to the Auto database
+train <- sample(392, 196)
+lm.fit <- lm(mpg~horsepower, data=Auto, subset=train)
+
+#  MSE
+mean((mpg-predict(lm.fit, Auto))[-train]^2)		# 22.28447
+
+# multinomial model
+lm.fit2 <- lm(mpg~poly(horsepower, 2), data = Auto, subset = train)
+lm.fit3 <- lm(mpg~poly(horsepower, 3), data = Auto, subset = train)
+mean((mpg-predict(lm.fit2,Auto))[-train]^2)		# 16.4932
+mean((mpg-predict(lm.fit3,Auto))[-train]^2)		# 16.4776
+
+"---------------------------- 留一交叉验证法 ----------------------------"
+
+library(boot)
+# 使用 boot::cv.glm 对 glm 模型进行交叉验证
+glm.fit <- glm(mpg~horsepower, data=Auto)
+cv.err <- cv.glm(Auto, glm.fit)
+# 交叉验证结果
+cv.err$delta
+
+"---------------------------- k 折交叉验证法 ----------------------------"
+
+set.seed(17)
+cv.error.10 <- rep(0, 10)
+for (i in 1:10){
+    glm.fit <- glm(mpg~poly(horsepower, i), data=Auto)
+    cv.error.10[i] <- cv.glm(Auto, glm.fit, K=10)$delta[1]
+}
+plot(cv.error.10)
+
+"------------------------------- 自助法 -------------------------------"
+
+# 自助法几乎可以应用在所有情形，而不要求复杂的数学运算。
+# 先创建一个计算统计量的函数，然后使用 boot 函数反复从数据集中有放回地抽取观测执行
+
+# 创建一个计算感兴趣的统计量的函数
+alpha.fn <- function(data, index){
+    X <- data$X[index]
+    Y <- data$Y[index]
+    output <- (var(Y)-cov(X,Y)) / (var(X)+var(Y)-2*cov(X,Y))
+    return (output)
+}
+# 计算统计量
+alpha.fn(Portfolio, 1:100)
+# 随机观测序列的统计量
+alpha.fn(Portfolio, sample(100, 100, replace=TRUE))
+# 自主法多次计算
+boot(Portfolio, alpha.fn, R=100)
+=====================================================
+> boot(Portfolio, alpha.fn, R=100)
+
+ORDINARY NONPARAMETRIC BOOTSTRAP
+
+Call:
+boot(data = Portfolio, statistic = alpha.fn, R = 100)
+
+Bootstrap Statistics :
+     original     bias    std. error
+t1* 0.5758321 0.00278335  0.08577495
+=====================================================
