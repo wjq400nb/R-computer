@@ -78,3 +78,32 @@ knn.pred <- knn(train.X, test.X, train.Y, k=1)	# 更改 k 值寻找最佳拟合
 table(knn.pred, test$Direction)
 mean(knn.pred == test$Direction)
 
+
+
+attach(Caravan)
+# standard data
+standardized.X <- scale(Caravan[, -86])
+var(standardized.X[, 1])
+# divid into test and train
+train.X <- standardized.X[-(1:1000), ]
+test.X <- standardized.X[(1:1000), ]
+train.Y <- Purchase[-(1:1000)]
+test.Y <- Purchase[(1:1000)]
+
+# KNN mobel
+knn.pred <- knn(train.X, test.X, train.Y, k=5)
+table(knn.pred, test.Y)
+# faluse
+mean(test.Y != knn.pred)
+mean(test.Y != 'No')
+
+# logistic mobel
+glm.fit <- glm(Purchase~., data=Caravan, family=binomial, subset=-(1:1000))
+glm.probs <- predict(glm.fit, Caravan[(1:1000), ], type='response')
+glm.pred <- rep('No', 1000)
+glm.pred[glm.probs>0.5] <- 'Yes'
+table(glm.pred, test.Y)
+# regulation logistic threshold predicted mobel
+glm.pred<-rep('No',1000)
+glm.pred[glm.probs>0.25]<-'Yes'
+table(glm.pred,test.Y)
